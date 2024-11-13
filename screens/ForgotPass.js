@@ -15,9 +15,16 @@ const theme = {
 const ForgotPass = ({navigation}) => {
   const [email, setEmail] = React.useState('');
   const handlResetPass = () => {
+    // Kiểm tra định dạng email
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(email)) {
+      Alert.alert('Vui lòng nhập lại email');
+      return; // Dừng hàm nếu email không hợp lệ
+    }
+    
     auth()
       .sendPasswordResetEmail(email)
-      .then(() => Alert.alert('Đã gửi email'))
+      .then(() => Alert.alert('Đã gửi yêu cầu reset mật khẩu đến Email'))
       .catch(e => Alert.alert(e.message));
   };
   return (
