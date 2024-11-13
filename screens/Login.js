@@ -1,4 +1,4 @@
-import { Image, StyleSheet, Text, View } from "react-native"
+import { Image, StyleSheet, Text, View, Alert, Linking, ToastAndroid } from "react-native"
 import { Button, HelperText, TextInput, Modal, Portal, DefaultTheme, Provider as PaperProvider } from "react-native-paper";
 import { login, useMyContextController } from "../store";
 import { useEffect, useState } from "react";
@@ -11,6 +11,7 @@ const Login = ({navigation}) => {
     const [hiddenPassword, setHiddenPassword] = useState(true)
     const [visible, setVisible] = useState(false);
     const [message, setMessage] = useState('');
+    const [wrongPasswordCount, setWrongPasswordCount] = useState(0);
 
     const hasErrorEmail = () => !email.includes("@")
     const hasErrorPassword = () => password.length < 6
@@ -28,8 +29,46 @@ const Login = ({navigation}) => {
             return;
         }
 
-        login(dispatch, email, password);
+        login(dispatch, email, password)
+            .then(() => {
+                setWrongPasswordCount(0);
+            })
+            .catch(() => {
+                setWrongPasswordCount(prevCount => prevCount + 1);
+                const remainingAttempts = 5 - wrongPasswordCount - 1;
+                if (wrongPasswordCount >= 4) {
+                    showNotification('Tài khoản đã bị cấm, vui lòng liên hệ hỗ trợ.');
+                } else {
+                    showNotification(`Sai mật khẩu lần ${wrongPasswordCount + 1}. Còn ${remainingAttempts} lần.`);
+                }
+            });
     }
+
+    const handleSupport = async () => {
+        try {
+            const supportEmail = "vuongminhchanh123@gmail.com";
+            const supportPhone = "0866787160";
+
+            Alert.alert(
+                "Liên hệ hỗ trợ",
+                "Chọn phương thức liên hệ",
+                [
+                    {
+                        text: "Gọi điện",
+                        onPress: () => Linking.openURL(`tel:${supportPhone}`)
+                    },
+                    {
+                        text: "Email",
+                        onPress: () => Linking.openURL(`mailto:${supportEmail}?subject=Yêu cầu mở khóa tài khoản&body=Email cần hỗ trợ: ${email}`)
+                    }
+                ]
+            );
+            console.log(supportEmail);
+        } catch (error) {
+            console.error("Error sending support request:", error);
+            ToastAndroid.show("Không thể gửi yêu cầu hỗ trợ. Vui lòng thử lại sau!", ToastAndroid.SHORT);
+        }
+    };
 
     useEffect(() => {
         console.log(userLogin)
@@ -102,7 +141,10 @@ const Login = ({navigation}) => {
                 <Button onPress={() => navigation.navigate("ForgotPass")}>
                     Quên mật khẩu
                 </Button>
-                <Button style={{marginTop: 0}} onPress={() => navigation.navigate("Walkthrough")}>
+                <Button onPress={handleSupport}>
+                    Liên hệ hỗ trợ
+                </Button>
+                <Button onPress={() => navigation.navigate("Walkthrough")}>
                     Xem hướng dẫn sử dụng
                 </Button>
                 <Portal>

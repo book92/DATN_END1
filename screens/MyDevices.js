@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity,Alert, Linking } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { useNavigation } from '@react-navigation/native';
 import firestore from '@react-native-firebase/firestore'; 
@@ -11,6 +11,7 @@ const BLUE_COLOR = '#0000CD';
 const MyDevices = ({route}) => {
   const [devices, setDevices] = useState([]);
   const [filteredDevices, setFilteredDevices] = useState([]);
+  const [email, setEmail] = useState("")
   const [searchQuery, setSearchQuery] = useState('');
   const [controller, dispatch] = useMyContextController();
   const {userLogin} = controller;
@@ -55,6 +56,31 @@ const MyDevices = ({route}) => {
     }
   };
 
+  const handleSupport = async () => {
+    try {
+        const supportEmail = "vuongminhchanh123@gmail.com";
+        const supportPhone = "0866787160";
+        Alert.alert(
+            "Liên hệ hỗ trợ",
+            "Chọn phương thức liên hệ",
+            [
+                {
+                    text: "Gọi điện",
+                    onPress: () => Linking.openURL(`tel:${supportPhone}`)
+                },
+                {
+                    text: "Email",
+                    onPress: () => Linking.openURL(`mailto:${supportEmail}?subject=Thêm thiết bị mới&body=Email cần hỗ trợ: ${email}`)
+                }
+            ]
+        );
+        console.log(supportEmail);
+    } catch (error) {
+        console.error("Error sending support request:", error);
+        ToastAndroid.show("Không thể gửi yêu cầu hỗ trợ. Vui lòng thử lại sau!", ToastAndroid.SHORT);
+    }
+};
+
   const renderItem = ({ item, index }) => {
     const onPressItem = () => {
       navigation.navigate('MyDetailDevices', { deviceId: item.id });
@@ -89,8 +115,11 @@ const MyDevices = ({route}) => {
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingVertical: 10 }}
       />
-      <Text style={styles.contactText}>Liên hệ Admin để thêm thiết bị</Text>
+      <TouchableOpacity onPress={handleSupport}>
+        <Text style={styles.contactText}>Liên hệ Admin để thêm thiết bị</Text>
+      </TouchableOpacity>
     </View>
+    
     
   );
 };

@@ -527,7 +527,7 @@ const DeviceDetail = ({ route, navigation }) => {
             </Button>
             <Button 
               mode="contained" 
-              onPress={() => navigation.navigate("Devices", {departmentName})} 
+              onPress={() => navigation.goBack()} 
               style={styles.button}
               labelStyle={styles.buttonText}
             >

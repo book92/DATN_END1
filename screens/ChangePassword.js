@@ -26,25 +26,39 @@ const ChangePassword = () => {
   };
   
   const handleChangePassword = async () => {
+    if (currentPass.trim() === '') {
+        Alert.alert('Thông báo', 'Vui lòng nhập mật khẩu cũ');
+        return;
+    }
+
     if (hasErrorPass() || hasErrorConfirmPass()) {
-      Alert.alert('Thông báo', 'Vui lòng kiểm tra lại thông tin nhập vào');
-      return;
+        Alert.alert('Thông báo', 'Vui lòng kiểm tra lại thông tin nhập vào');
+        return;
     }
 
     try {
-      const user = auth().currentUser;
-      
-      if (!user) {
-        Alert.alert('Lỗi', 'Người dùng hiện tại không tồn tại');
-        return;
-      }
-      await reauthenticate();
-      await user.updatePassword(password);
-      await firestore().collection('USERS').doc(user.email).update({password: password});
-      Alert.alert('Thành công', 'Cập nhật mật khẩu thành công, vui lòng đăng nhập lại');
-      navigation.navigate("Login");
+        const user = auth().currentUser;
+
+        if (!user) {
+            Alert.alert('Lỗi', 'Người dùng hiện tại không tồn tại');
+            return;
+        }
+
+        // Thực hiện xác thực lại với mật khẩu cũ
+        await reauthenticate();
+
+        // Nếu xác thực thành công, cập nhật mật khẩu mới
+        await user.updatePassword(password);
+        await firestore().collection('USERS').doc(user.email).update({ password: password });
+        Alert.alert('Thành công', 'Cập nhật mật khẩu thành công, vui lòng đăng nhập lại');
+        navigation.navigate("Login");
     } catch (error) {
-      Alert.alert('Thông báo', 'Đổi mật khẩu thất bại');
+        // Kiểm tra lỗi xác thực
+        if (error.code === 'auth/wrong-password') {
+            Alert.alert('Thông báo', 'Mật khẩu cũ sai');
+        } else {
+            Alert.alert('Thông báo', 'Đổi mật khẩu thất bại');
+        }
     }
   };
   

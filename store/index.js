@@ -73,7 +73,8 @@ const CreateAccount = async (fullname, email, password, phone, address, departme
             department,
             role: "user",
             note: "",
-            avatar: ""
+            avatar: "",
+            failedAttempts: "0",
         });
         Alert.alert("Thông báo", "Tạo tài khoản thành công với email: " + email, [
             {
@@ -95,7 +96,7 @@ const CreateAccount = async (fullname, email, password, phone, address, departme
 };
 
 const login = (dispatch, email, password) => {
-    auth().signInWithEmailAndPassword(email, password)
+    return auth().signInWithEmailAndPassword(email, password)
         .then(async () => {
             const userDoc = await firestore().collection("USERS").doc(email).get();
             if (userDoc.exists) {
@@ -104,6 +105,9 @@ const login = (dispatch, email, password) => {
                     Alert.alert("Bạn đã bị cấm", "Vui lòng liên hệ Admin.");
                     auth().signOut(); // Đăng xuất người dùng bị cấm
                 } else {
+                    await firestore().collection("USERS").doc(email).update({
+                        failedAttempts: "0"
+                    });
                     dispatch({ type: "USER_LOGIN", value: userData });
                     await AsyncStorage.setItem('userLogin', JSON.stringify(userData)); // Lưu dữ liệu người dùng
                 }
@@ -111,7 +115,26 @@ const login = (dispatch, email, password) => {
                 Alert.alert("Lỗi", "Tài khoản không tồn tại.");
             }
         })
-        .catch(e => Alert.alert("Email hoặc Password không đúng"));
+        .catch(async (error) => {
+            const userDoc = await firestore().collection("USERS").doc(email).get();
+            if (userDoc.exists) {
+                const userData = userDoc.data();
+                const currentFailedAttempts = (parseInt(userData.failedAttempts) || 0) + 1; // Tăng số lần nhập sai
+
+                if (currentFailedAttempts >= 5) {
+                    await firestore().collection("USERS").doc(email).update({
+                        banned: true,
+                        bannedAt: firestore.FieldValue.serverTimestamp()
+                    });
+                    Alert.alert("Tài khoản đã bị cấm", "Vui lòng liên hệ hỗ trợ.");
+                } else {
+                    await firestore().collection("USERS").doc(email).update({
+                        failedAttempts: currentFailedAttempts.toString() // Lưu số lần nhập sai
+                    });
+                    Alert.alert("Sai mật khẩu", `Sai mật khẩu lần thứ ${currentFailedAttempts}. Sai 5 lần sẽ bị cấm tài khoản.`);
+                }
+            }
+        });
 };
 
 const logout = (dispatch) => {
@@ -139,7 +162,8 @@ const unbanUser = async (email) => {
     try {
         await firestore().collection("USERS").doc(email).update({
             banned: false,
-            unbannedAt: firestore.FieldValue.serverTimestamp()
+            unbannedAt: firestore.FieldValue.serverTimestamp(),
+            failedAttempts: "0"
         });
         Alert.alert("Thông báo", "Tài khoản đã được bỏ cấm thành công!");
     } catch (error) {
